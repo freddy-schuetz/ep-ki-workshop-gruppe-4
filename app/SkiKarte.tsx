@@ -16,9 +16,10 @@ const landFarbe: Record<string, string> = {
 const laenderListe = ["Alle", "Österreich", "Schweiz", "Frankreich", "Italien"];
 const flakePositions = [4,11,18,25,33,41,49,57,65,73,81,89,96];
 
-function chaletHTML(farbe: string, kurzname: string, aktiv: boolean) {
+function chaletHTML(farbe: string, kurzname: string, aktiv: boolean, pfeil = false) {
   return `
-    <div style="opacity:${aktiv ? 1 : 0.15};transition:opacity 0.3s;cursor:pointer">
+    <div style="opacity:${aktiv ? 1 : 0.15};transition:opacity 0.3s;cursor:pointer;text-align:center">
+      ${pfeil ? `<div class="chalet-pfeil" style="font-size:18px;animation:bouncePfeil 0.8s ease-in-out infinite alternate;display:block;line-height:1;margin-bottom:2px">⬇️</div>` : `<div style="height:22px"></div>`}
       <svg width="44" height="52" viewBox="0 0 44 52" xmlns="http://www.w3.org/2000/svg">
         <!-- Schatten -->
         <ellipse cx="22" cy="50" rx="12" ry="3" fill="rgba(0,0,0,0.2)"/>
@@ -54,7 +55,7 @@ function chaletHTML(farbe: string, kurzname: string, aktiv: boolean) {
 export default function SkiKarte() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<maplibregl.Map | null>(null);
-  const markersRef = useRef<{ marker: maplibregl.Marker; land: string }[]>([]);
+  const markersRef = useRef<{ marker: maplibregl.Marker; land: string; lng: number; lat: number; farbe: string; kurzname: string }[]>([]);
   const [aktivesLand, setAktivesLand] = useState("Alle");
   const [sichtbar, setSichtbar] = useState(skigebiete.gebiete.length);
 
@@ -99,7 +100,7 @@ export default function SkiKarte() {
           .setPopup(popup)
           .addTo(map);
 
-        markersRef.current.push({ marker, land: g.land });
+        markersRef.current.push({ marker, land: g.land, lng: g.lng, lat: g.lat, farbe, kurzname });
       });
 
       // Auf alle Gebiete zoomen
@@ -116,26 +117,47 @@ export default function SkiKarte() {
     return () => { map.remove(); markersRef.current = []; };
   }, []);
 
-  // Länderfilter: Marker ein-/ausblenden
+  // Länderfilter: Marker ein-/ausblenden + Zoom + Pfeile
   useEffect(() => {
+    if (!mapInstance.current) return;
+    const map = mapInstance.current;
     let count = 0;
-    markersRef.current.forEach(({ marker, land }) => {
+    const aktivLngs: number[] = [];
+    const aktivLats: number[] = [];
+
+    markersRef.current.forEach(({ marker, land, lng, lat, farbe, kurzname }) => {
       const aktiv = aktivesLand === "Alle" || land === aktivesLand || land.includes(aktivesLand);
-      const el = marker.getElement();
-      const inner = el.firstElementChild as HTMLElement | null;
-      if (inner) inner.style.opacity = aktiv ? "1" : "0.12";
-      if (aktiv) count++;
+      const pfeil = aktiv && aktivesLand !== "Alle";
+      // HTML neu setzen (mit/ohne Pfeil)
+      marker.getElement().innerHTML = chaletHTML(farbe, kurzname, aktiv, pfeil);
+      if (aktiv) {
+        count++;
+        aktivLngs.push(lng);
+        aktivLats.push(lat);
+      }
     });
+
     setSichtbar(count);
+
+    // Karte auf aktive Gebiete zoomen
+    if (aktivLngs.length > 0) {
+      const pad = aktivesLand === "Alle" ? 60 : 100;
+      map.fitBounds(
+        [[Math.min(...aktivLngs) - 0.3, Math.min(...aktivLats) - 0.2],
+         [Math.max(...aktivLngs) + 0.3, Math.max(...aktivLats) + 0.2]],
+        { padding: pad, duration: 900, essential: true }
+      );
+    }
   }, [aktivesLand]);
 
   return (
     <div style={{ height: "100vh", width: "100vw", position: "relative", fontFamily: "sans-serif" }}>
 
-      {/* Schneeflocken */}
+      {/* Schneeflocken + Pfeil-Animation */}
       <style>{`
         @keyframes fallSnow { 0%{transform:translateY(-20px) rotate(0deg);opacity:.7} 100%{transform:translateY(105vh) rotate(360deg);opacity:0} }
         .flake{position:fixed;top:-20px;pointer-events:none;z-index:9999;animation:fallSnow linear infinite;color:white;}
+        @keyframes bouncePfeil { 0%{transform:translateY(0px)} 100%{transform:translateY(6px)} }
       `}</style>
       {flakePositions.map((left, i) => (
         <span key={i} className="flake" style={{
