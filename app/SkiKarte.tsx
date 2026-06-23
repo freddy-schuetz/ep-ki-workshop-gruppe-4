@@ -1,203 +1,261 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
+import { useState } from "react";
 import skigebiete from "@/data/skigebiete.json";
 
+// --- Projektion: Geo-Koordinaten → SVG-Pixel ---
+const SVG_W = 900;
+const SVG_H = 560;
+const LNG_MIN = 5.8, LNG_MAX = 13.2;
+const LAT_MIN = 44.5, LAT_MAX = 48.2;
+
+function project(lat: number, lng: number): [number, number] {
+  const x = ((lng - LNG_MIN) / (LNG_MAX - LNG_MIN)) * SVG_W;
+  const y = ((LAT_MAX - lat) / (LAT_MAX - LAT_MIN)) * SVG_H;
+  return [x, y];
+}
+
+// --- Vereinfachte Alpen-Umrisse als SVG-Paths ---
+// Grob nachgezeichnete Ländergrenzen der Alpenregion
+const LAENDER = [
+  {
+    name: "Österreich",
+    farbe: "#c8e6ff",
+    rand: "#7ab8f5",
+    path: "M 330 120 L 380 105 L 440 98 L 510 100 L 570 108 L 620 115 L 660 125 L 700 140 L 720 158 L 710 175 L 680 185 L 640 192 L 590 195 L 530 200 L 470 198 L 410 195 L 360 188 L 325 175 L 318 155 Z",
+  },
+  {
+    name: "Schweiz",
+    farbe: "#d4eeff",
+    rand: "#5aaaf0",
+    path: "M 155 150 L 200 135 L 250 128 L 300 130 L 330 140 L 325 175 L 310 195 L 270 210 L 225 215 L 185 205 L 158 185 L 148 168 Z",
+  },
+  {
+    name: "Frankreich",
+    farbe: "#ddf0ff",
+    rand: "#90c8f8",
+    path: "M 58 170 L 100 145 L 148 168 L 158 185 L 150 215 L 130 250 L 90 270 L 55 255 L 40 225 L 45 195 Z",
+  },
+  {
+    name: "Italien",
+    farbe: "#e8f6ff",
+    rand: "#a8d4f8",
+    path: "M 155 150 L 300 130 L 330 140 L 360 188 L 410 195 L 470 198 L 530 200 L 590 195 L 640 192 L 680 185 L 710 175 L 730 200 L 720 240 L 680 275 L 600 295 L 500 305 L 400 300 L 310 280 L 240 260 L 185 240 L 150 215 L 158 185 Z",
+  },
+];
+
+// Berggipfel-Dekorationen (grob im Alpenbogen)
+const GIPFEL = [
+  [248, 145], [280, 132], [310, 128], [350, 118], [395, 108],
+  [430, 102], [468, 99], [505, 103], [540, 108], [575, 112],
+  [610, 118], [645, 126], [675, 138], [700, 148],
+  [175, 158], [145, 162], [200, 148],
+  [270, 195], [330, 192], [390, 198],
+];
+
+// Ländernamen-Position (manuell zentriert)
+const LAND_LABEL: Record<string, [number, number]> = {
+  "Österreich": [520, 158],
+  "Schweiz": [238, 175],
+  "Frankreich": [92, 210],
+  "Italien": [430, 255],
+};
+
 const landFarbe: Record<string, string> = {
-  "Österreich": "#e8443a",
+  "Österreich": "#1457c8",
   "Schweiz": "#e8443a",
   "Schweiz / Frankreich": "#f59e0b",
   "Frankreich": "#2fae66",
-  "Italien": "#1457c8",
+  "Italien": "#9333ea",
 };
 
-const flakes = ["❄️","❅","❆","❄️","🌨️","❅","❆","❄️","❅","❆","❄️","❅"];
+const laenderListe = ["Alle", "Österreich", "Schweiz", "Frankreich", "Italien"];
+
+const flakePositions = [5,12,19,27,34,41,48,55,62,69,76,83,90,97];
 
 export default function SkiKarte() {
-  const mapRef = useRef<HTMLDivElement>(null);
+  const [aktivesLand, setAktivesLand] = useState("Alle");
+  const [hover, setHover] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    const map = new maplibregl.Map({
-      container: mapRef.current,
-      style: {
-        version: 8,
-        sources: {
-          "osm": {
-            type: "raster",
-            tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-            tileSize: 256,
-            attribution: "© OpenStreetMap",
-          },
-          "terrain": {
-            type: "raster-dem",
-            url: "https://demotiles.maplibre.org/terrain-tiles/tiles.json",
-            tileSize: 256,
-          },
-        },
-        layers: [
-          {
-            id: "osm",
-            type: "raster",
-            source: "osm",
-          },
-        ],
-        sky: {
-          "sky-color": "#cfe6ff",
-          "sky-horizon-blend": 0.5,
-          "horizon-color": "#f4f9ff",
-          "horizon-fog-blend": 0.5,
-          "fog-color": "#d8eaff",
-          "fog-ground-blend": 0.5,
-        },
-      },
-      center: [10.5, 46.5],
-      zoom: 6,
-      pitch: 55,
-      bearing: -15,
-    });
-
-    map.on("load", () => {
-      // 3D-Terrain aktivieren
-      map.setTerrain({ source: "terrain", exaggeration: 2.5 });
-
-      // Schnee-Overlay: weißes Layer über hohe Regionen
-      map.addSource("hillshade-source", {
-        type: "raster-dem",
-        url: "https://demotiles.maplibre.org/terrain-tiles/tiles.json",
-        tileSize: 256,
-      });
-      map.addLayer({
-        id: "hillshade",
-        type: "hillshade",
-        source: "hillshade-source",
-        paint: {
-          "hillshade-shadow-color": "#aac8e8",
-          "hillshade-highlight-color": "#ffffff",
-          "hillshade-accent-color": "#b0cce8",
-          "hillshade-illumination-direction": 315,
-          "hillshade-exaggeration": 0.6,
-        },
-      });
-
-      // Marker für jedes Skigebiet
-      skigebiete.gebiete.forEach((g) => {
-        const farbe = landFarbe[g.land] ?? "#1457c8";
-        const el = document.createElement("div");
-        el.innerHTML = `
-          <div style="
-            background: ${farbe};
-            color: white;
-            border: 2px solid white;
-            border-radius: 20px;
-            padding: 4px 10px;
-            font-size: 11px;
-            font-weight: 700;
-            white-space: nowrap;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-            font-family: sans-serif;
-            cursor: pointer;
-          ">⛷️ ${g.name.length > 22 ? g.name.slice(0, 20) + "…" : g.name}</div>
-        `;
-
-        new maplibregl.Marker({ element: el })
-          .setLngLat([g.lng, g.lat])
-          .setPopup(
-            new maplibregl.Popup({ offset: 25 }).setHTML(`
-              <div style="font-family:sans-serif; min-width:160px">
-                <div style="font-weight:800;color:${farbe};font-size:14px">${g.name}</div>
-                <div style="color:#666;font-size:12px;margin-top:2px">${g.land}</div>
-                <div style="margin-top:6px;font-size:12px">
-                  🎿 <b>${g.pistenKm} km</b> Pisten<br>
-                  ⛰️ bis <b>${g.hoeheMeter} m</b><br>
-                  ✨ ${g.highlight}
-                </div>
-              </div>
-            `)
-          )
-          .addTo(map);
-      });
-
-      // Karte auf alle Gebiete zoomen
-      const lngs = skigebiete.gebiete.map((g) => g.lng);
-      const lats = skigebiete.gebiete.map((g) => g.lat);
-      map.fitBounds(
-        [[Math.min(...lngs) - 0.3, Math.min(...lats) - 0.3],
-         [Math.max(...lngs) + 0.3, Math.max(...lats) + 0.3]],
-        { padding: 80, pitch: 55, bearing: -15 }
-      );
-    });
-
-    return () => map.remove();
-  }, []);
+  const sichtbar = skigebiete.gebiete.filter(
+    (g) => aktivesLand === "Alle" || g.land === aktivesLand || g.land.includes(aktivesLand)
+  );
 
   return (
-    <div style={{ height: "100vh", width: "100vw", position: "relative", overflow: "hidden" }}>
+    <div style={{
+      minHeight: "100vh", background: "linear-gradient(180deg, #0b2a6b 0%, #1457c8 40%, #4a9de8 100%)",
+      display: "flex", flexDirection: "column", alignItems: "center",
+      fontFamily: "sans-serif", padding: "0 0 24px",
+    }}>
 
-      {/* Schneeflocken */}
-      <div style={{
-        position: "absolute", top: 0, left: 0, right: 0, zIndex: 1100,
-        pointerEvents: "none", display: "flex", justifyContent: "space-around",
-        padding: "3px 0", background: "rgba(20,87,200,0.1)",
-      }}>
-        {flakes.map((f, i) => <span key={i} style={{ fontSize: 13, opacity: 0.5 }}>{f}</span>)}
-      </div>
+      {/* Schneeflocken-Animation */}
+      <style>{`
+        @keyframes fallSnow { 0% { transform: translateY(-20px) rotate(0deg); opacity:0.7 } 100% { transform: translateY(100vh) rotate(360deg); opacity:0 } }
+        .snowflake { position:fixed; top:-20px; pointer-events:none; z-index:9999; animation: fallSnow linear infinite; }
+      `}</style>
+      {flakePositions.map((left, i) => (
+        <span key={i} className="snowflake" style={{
+          left: `${left}%`, fontSize: 16 + (i % 3) * 6,
+          animationDuration: `${6 + (i % 4) * 2}s`,
+          animationDelay: `${i * 0.5}s`,
+          color: "white", opacity: 0.6,
+        }}>❄</span>
+      ))}
 
       {/* Header */}
       <div style={{
-        position: "absolute", top: 26, left: 0, right: 0, zIndex: 1000,
-        display: "flex", alignItems: "flex-start", justifyContent: "space-between",
-        padding: "0 16px", pointerEvents: "none",
+        width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "14px 28px", background: "rgba(11,42,107,0.6)", backdropFilter: "blur(8px)",
+        boxShadow: "0 2px 16px rgba(0,0,0,0.3)",
       }}>
-        <div style={{
-          background: "linear-gradient(135deg, #0b3a8c, #1457c8)",
-          color: "white", borderRadius: 16, padding: "10px 16px",
-          boxShadow: "0 4px 20px rgba(20,87,200,0.45)",
-          display: "flex", alignItems: "center", gap: 10,
-        }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{
-            background: "white", color: "#1457c8",
-            fontWeight: 900, fontSize: 17, borderRadius: 8,
-            padding: "3px 9px", letterSpacing: 1,
+            background: "white", color: "#1457c8", fontWeight: 900,
+            fontSize: 20, borderRadius: 10, padding: "4px 12px", letterSpacing: 1,
           }}>E&amp;P</div>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: 15 }}>Skigebiete</div>
-            <div style={{ fontSize: 10, opacity: 0.85 }}>Skipass inklusive ✓</div>
+          <div style={{ color: "white" }}>
+            <div style={{ fontWeight: 800, fontSize: 18 }}>Skigebiete ❄️</div>
+            <div style={{ fontSize: 11, opacity: 0.75 }}>Skipass inklusive · #schneesüchtig</div>
           </div>
         </div>
-
-        <div style={{
-          background: "rgba(255,255,255,0.95)", borderRadius: 14, padding: "10px 14px",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.14)", border: "1px solid #cfe6ff",
-          fontSize: 11, fontWeight: 600, display: "flex", flexDirection: "column", gap: 4,
-        }}>
-          {[
-            { land: "Österreich / Schweiz", farbe: "#e8443a" },
-            { land: "Frankreich", farbe: "#2fae66" },
-            { land: "Italien", farbe: "#1457c8" },
-          ].map(({ land, farbe }) => (
-            <div key={land} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: farbe }} />
-              {land}
-            </div>
-          ))}
+        <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>
+          {sichtbar.length} von {skigebiete.gebiete.length} Gebieten
         </div>
       </div>
 
-      {/* Karte */}
-      <div ref={mapRef} style={{ height: "100%", width: "100%" }} />
+      {/* Länder-Filter */}
+      <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap", justifyContent: "center" }}>
+        {laenderListe.map((land) => (
+          <button key={land} onClick={() => setAktivesLand(land)} style={{
+            padding: "7px 18px", borderRadius: 20, border: "2px solid",
+            borderColor: aktivesLand === land ? "white" : "rgba(255,255,255,0.35)",
+            background: aktivesLand === land ? "white" : "rgba(255,255,255,0.12)",
+            color: aktivesLand === land ? "#1457c8" : "white",
+            fontWeight: aktivesLand === land ? 800 : 500,
+            fontSize: 13, cursor: "pointer", transition: "all 0.2s",
+          }}>
+            {land === "Alle" ? "🗺️ Alle" :
+             land === "Österreich" ? "🇦🇹 Österreich" :
+             land === "Schweiz" ? "🇨🇭 Schweiz" :
+             land === "Frankreich" ? "🇫🇷 Frankreich" : "🇮🇹 Italien"}
+          </button>
+        ))}
+      </div>
+
+      {/* SVG-Karte */}
+      <div style={{
+        marginTop: 16, borderRadius: 24, overflow: "hidden",
+        boxShadow: "0 8px 40px rgba(0,0,0,0.4), 0 0 0 3px rgba(255,255,255,0.15)",
+        background: "#b8d9f5", maxWidth: "95vw",
+      }}>
+        <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" style={{ maxHeight: "62vh", display: "block" }}>
+          {/* Himmel/Schnee-Hintergrund */}
+          <defs>
+            <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#e8f4ff" />
+              <stop offset="60%" stopColor="#cce8ff" />
+              <stop offset="100%" stopColor="#aad4f0" />
+            </linearGradient>
+            <filter id="softShadow">
+              <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.15" />
+            </filter>
+          </defs>
+          <rect width={SVG_W} height={SVG_H} fill="url(#bgGrad)" />
+
+          {/* Länderflächen */}
+          {LAENDER.map((l) => (
+            <path key={l.name} d={l.path}
+              fill={aktivesLand === "Alle" || aktivesLand === l.name ? l.farbe : "#d8eef8"}
+              stroke={l.rand} strokeWidth={1.5}
+              style={{ transition: "fill 0.3s" }}
+              filter="url(#softShadow)"
+            />
+          ))}
+
+          {/* Berggipfel-Symbole ⛰ */}
+          {GIPFEL.map(([x, y], i) => (
+            <g key={i} transform={`translate(${x},${y})`}>
+              <polygon points="0,-10 7,0 -7,0" fill="white" opacity={0.85} />
+              <polygon points="0,-6 4,0 -4,0" fill="#cce8ff" opacity={0.9} />
+            </g>
+          ))}
+
+          {/* Ländernamen */}
+          {LAENDER.map((l) => {
+            const [lx, ly] = LAND_LABEL[l.name] ?? [0, 0];
+            const aktiv = aktivesLand === "Alle" || aktivesLand === l.name;
+            return (
+              <text key={l.name} x={lx} y={ly}
+                textAnchor="middle" fontSize={13} fontWeight={700}
+                fill={aktiv ? "#0b3a8c" : "#aac8e0"}
+                opacity={aktiv ? 0.7 : 0.4}
+                style={{ transition: "opacity 0.3s", letterSpacing: 2, textTransform: "uppercase" }}
+              >
+                {l.name.toUpperCase()}
+              </text>
+            );
+          })}
+
+          {/* Skigebiete-Pins */}
+          {skigebiete.gebiete.map((g) => {
+            const [x, y] = project(g.lat, g.lng);
+            const farbe = landFarbe[g.land] ?? "#1457c8";
+            const aktiv = aktivesLand === "Alle" || g.land === aktivesLand || g.land.includes(aktivesLand);
+            const isHover = hover === g.id;
+            const kurzname = g.name.length > 18 ? g.name.split(" ")[0] : g.name;
+
+            return (
+              <g key={g.id}
+                transform={`translate(${x},${y})`}
+                style={{ cursor: "pointer", opacity: aktiv ? 1 : 0.15, transition: "opacity 0.3s" }}
+                onMouseEnter={() => setHover(g.id)}
+                onMouseLeave={() => setHover(null)}
+              >
+                {/* Schatten-Blob */}
+                <ellipse cx={0} cy={14} rx={8} ry={3} fill="rgba(0,0,0,0.15)" />
+                {/* Pin */}
+                <circle cx={0} cy={0} r={isHover ? 10 : 8}
+                  fill={farbe} stroke="white" strokeWidth={2}
+                  style={{ transition: "r 0.15s" }}
+                />
+                <text x={0} y={4} textAnchor="middle" fontSize={10} fill="white" fontWeight={800}>⛷</text>
+
+                {/* Name-Label — immer sichtbar */}
+                <rect x={-kurzname.length * 3.2 - 4} y={-30} width={kurzname.length * 6.4 + 8} height={18}
+                  rx={9} fill={farbe} opacity={0.92}
+                />
+                <text x={0} y={-17} textAnchor="middle" fontSize={10} fill="white" fontWeight={700}>
+                  {kurzname}
+                </text>
+
+                {/* Hover-Tooltip */}
+                {isHover && (
+                  <g transform="translate(14, -60)">
+                    <rect x={0} y={0} width={170} height={72} rx={10}
+                      fill="white" stroke={farbe} strokeWidth={1.5}
+                      filter="url(#softShadow)"
+                    />
+                    <text x={10} y={18} fontSize={11} fontWeight={800} fill={farbe}>{g.name}</text>
+                    <text x={10} y={33} fontSize={10} fill="#555">{g.land} · {g.region.split(",")[0]}</text>
+                    <text x={10} y={48} fontSize={10} fill="#333">🎿 {g.pistenKm} km · ⛰️ {g.hoeheMeter} m</text>
+                    <text x={10} y={63} fontSize={9} fill="#2fae66" fontWeight={700}>✓ Skipass inklusive</text>
+                  </g>
+                )}
+              </g>
+            );
+          })}
+
+          {/* Dekorative Schneeflocken auf der Karte */}
+          {[[50,40],[820,60],[100,300],[780,400],[450,30],[300,500],[700,480]].map(([fx,fy],i) => (
+            <text key={i} x={fx} y={fy} fontSize={18} opacity={0.25} fill="#5599dd">❄</text>
+          ))}
+        </svg>
+      </div>
 
       {/* Slogan */}
       <div style={{
-        position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)",
-        zIndex: 1000, pointerEvents: "none",
-        background: "rgba(11,58,140,0.88)", color: "white",
-        borderRadius: 20, padding: "6px 18px",
-        fontSize: 12, fontWeight: 600, letterSpacing: 0.5,
-        boxShadow: "0 2px 10px rgba(0,0,0,0.2)", whiteSpace: "nowrap",
+        marginTop: 14, color: "rgba(255,255,255,0.75)",
+        fontSize: 12, fontWeight: 600, letterSpacing: 1,
       }}>
         ❄️ Viel Schnee für wenig Flocken · #schneesüchtig
       </div>
