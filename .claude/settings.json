@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint:*)",
+      "Bash(node:*)",
+      "Bash(node --version)",
+      "Bash(git --version)",
+      "Bash(git clone:*)",
+      "Bash(npx:*)",
+      "Bash(winget install:*)",
+      "Bash(brew install:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "npm install" }
+        ]
+      }
+    ]
+  }
+}

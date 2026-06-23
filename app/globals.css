@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+/* E&P-Reisen Winter-Palette — nutzbar als bg-brand, text-brand-accent, bg-snow, … */
+@theme {
+  --color-brand: #1457c8; /* E&P-Blau */
+  --color-brand-dark: #0b3a8c;
+  --color-brand-accent: #2fae66; /* frisches Grün (CTAs) */
+  --color-snow: #f4f9ff; /* Schnee-Weiß */
+  --color-ice: #cfe6ff; /* Eisblau */
+  --color-night: #0b1f3a; /* Nachtblau (Text/Dark) */
+}
+
+/* Leaflet-Karte (Konzept 3) braucht eine Höhe, sonst bleibt sie unsichtbar. */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+}

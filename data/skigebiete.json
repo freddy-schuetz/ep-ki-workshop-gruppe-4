@@ -1,0 +1,149 @@
+{
+  "_hinweis": "Illustrative Eckdaten für den Workshop. Für echte, aktuelle Angebote bitte ep-reisen.de prüfen.",
+  "gebiete": [
+    {
+      "id": "saalbach",
+      "name": "Saalbach Hinterglemm Leogang Fieberbrunn",
+      "land": "Österreich",
+      "region": "Skicircus, Salzburger Land/Tirol",
+      "lat": 47.3892,
+      "lng": 12.6364,
+      "pistenKm": 270,
+      "hoeheMeter": 2096,
+      "highlight": "Riesiges Skicircus-Verbundgebiet mit legendärem Après-Ski.",
+      "skipassInklusive": true
+    },
+    {
+      "id": "montafon",
+      "name": "Silvretta Montafon",
+      "land": "Österreich",
+      "region": "Montafon, Vorarlberg",
+      "lat": 47.0781,
+      "lng": 9.9183,
+      "pistenKm": 140,
+      "hoeheMeter": 2430,
+      "highlight": "Breite Pisten, top für Gruppen – und ordentlich Après-Ski.",
+      "skipassInklusive": true
+    },
+    {
+      "id": "stubaital",
+      "name": "Stubaier Gletscher",
+      "land": "Österreich",
+      "region": "Stubaital, Tirol",
+      "lat": 46.9806,
+      "lng": 11.1308,
+      "pistenKm": 64,
+      "hoeheMeter": 3210,
+      "highlight": "Gletscher mit Schneegarantie – Saisonstart schon im Herbst.",
+      "skipassInklusive": true
+    },
+    {
+      "id": "hintertux",
+      "name": "Hintertuxer Gletscher",
+      "land": "Österreich",
+      "region": "Zillertal, Tirol",
+      "lat": 47.0697,
+      "lng": 11.6628,
+      "pistenKm": 60,
+      "hoeheMeter": 3250,
+      "highlight": "Das ganze Jahr Schnee – das einzige 365-Tage-Skigebiet Österreichs.",
+      "skipassInklusive": true
+    },
+    {
+      "id": "soelden",
+      "name": "Sölden",
+      "land": "Österreich",
+      "region": "Ötztal, Tirol",
+      "lat": 46.9646,
+      "lng": 11.0086,
+      "pistenKm": 144,
+      "hoeheMeter": 3340,
+      "highlight": "Drei Gipfel über 3.000 m, schneesicher und bekannt aus James Bond.",
+      "skipassInklusive": true
+    },
+    {
+      "id": "davos",
+      "name": "Davos Klosters",
+      "land": "Schweiz",
+      "region": "Graubünden",
+      "lat": 46.7998,
+      "lng": 9.8366,
+      "pistenKm": 300,
+      "hoeheMeter": 2844,
+      "highlight": "Sechs Skigebiete, riesiges Gelände – ein Klassiker der Alpen.",
+      "skipassInklusive": true
+    },
+    {
+      "id": "arosa",
+      "name": "Arosa Lenzerheide",
+      "land": "Schweiz",
+      "region": "Graubünden",
+      "lat": 46.7833,
+      "lng": 9.6803,
+      "pistenKm": 225,
+      "hoeheMeter": 2865,
+      "highlight": "Sonnenverwöhnt und familienfreundlich, mit Panorama-Verbund.",
+      "skipassInklusive": true
+    },
+    {
+      "id": "portesdusoleil",
+      "name": "Portes du Soleil",
+      "land": "Schweiz / Frankreich",
+      "region": "Wallis / Haute-Savoie",
+      "lat": 46.1807,
+      "lng": 6.7956,
+      "pistenKm": 600,
+      "hoeheMeter": 2466,
+      "highlight": "Eines der größten Skigebiete der Welt, grenzüberschreitend.",
+      "skipassInklusive": true
+    },
+    {
+      "id": "scuol",
+      "name": "Scuol Motta Naluns",
+      "land": "Schweiz",
+      "region": "Unterengadin, Graubünden",
+      "lat": 46.7967,
+      "lng": 10.2997,
+      "pistenKm": 80,
+      "hoeheMeter": 2785,
+      "highlight": "Ruhiges Engadin-Gebiet mit Bädertradition im Tal.",
+      "skipassInklusive": true
+    },
+    {
+      "id": "deuxalpes",
+      "name": "Les Deux Alpes",
+      "land": "Frankreich",
+      "region": "Isère, Alpen",
+      "lat": 45.0106,
+      "lng": 6.1247,
+      "pistenKm": 200,
+      "hoeheMeter": 3600,
+      "highlight": "Großer Gletscher, lange Talabfahrt und lebendiges Dorf.",
+      "skipassInklusive": true
+    },
+    {
+      "id": "valthorens",
+      "name": "Val Thorens / Trois Vallées",
+      "land": "Frankreich",
+      "region": "Savoie",
+      "lat": 45.2976,
+      "lng": 6.5806,
+      "pistenKm": 600,
+      "hoeheMeter": 3230,
+      "highlight": "Höchster Skiort Europas, Teil des größten Skigebiets der Welt.",
+      "skipassInklusive": true
+    },
+    {
+      "id": "ahrntal",
+      "name": "Ahrntal (Klausberg & Speikboden)",
+      "land": "Italien",
+      "region": "Südtirol",
+      "lat": 46.9512,
+      "lng": 11.9525,
+      "pistenKm": 50,
+      "hoeheMeter": 2510,
+      "highlight": "Familiäres Südtiroler Gebiet, schneesicher und gemütlich.",
+      "skipassInklusive": true
+    }
+  ]
+}

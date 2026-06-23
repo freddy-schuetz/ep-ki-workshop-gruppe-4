@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800" role="img" aria-label="Verschneite Berge bei Sonnenaufgang">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1457c8"/>
+      <stop offset="0.55" stop-color="#7fb2f2"/>
+      <stop offset="1" stop-color="#f4f9ff"/>
+    </linearGradient>
+    <linearGradient id="snow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#cfe6ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#sky)"/>
+  <circle cx="940" cy="180" r="90" fill="#fff4d6" opacity="0.9"/>
+  <polygon points="0,800 320,360 560,560 760,300 1000,560 1200,420 1200,800" fill="#0b3a8c" opacity="0.85"/>
+  <polygon points="0,800 360,470 640,640 900,430 1200,650 1200,800" fill="url(#snow)"/>
+  <polygon points="320,360 360,420 280,420" fill="#ffffff"/>
+  <polygon points="760,300 800,360 720,360" fill="#ffffff"/>
+  <g fill="#ffffff" opacity="0.9">
+    <circle cx="150" cy="120" r="5"/><circle cx="420" cy="90" r="4"/><circle cx="650" cy="150" r="5"/>
+    <circle cx="300" cy="220" r="3"/><circle cx="1050" cy="120" r="4"/><circle cx="880" cy="260" r="3"/>
+  </g>
+</svg>
