@@ -1,11 +1,10 @@
 "use client";
 
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
+import { useEffect, useRef } from "react";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import skigebiete from "@/data/skigebiete.json";
 
-// Farben je Land
 const landFarbe: Record<string, string> = {
   "Österreich": "#e8443a",
   "Schweiz": "#e8443a",
@@ -14,46 +13,135 @@ const landFarbe: Record<string, string> = {
   "Italien": "#1457c8",
 };
 
-function makeIcon(name: string, land: string) {
-  const farbe = landFarbe[land] ?? "#1457c8";
-  const html = `
-    <div style="
-      background: ${farbe};
-      color: white;
-      border: 2px solid white;
-      border-radius: 20px;
-      padding: 4px 10px;
-      font-size: 11px;
-      font-weight: 700;
-      white-space: nowrap;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
-      font-family: sans-serif;
-      display: flex; align-items: center; gap: 4px;
-    ">
-      ⛷️ ${name.length > 22 ? name.slice(0, 20) + "…" : name}
-    </div>
-  `;
-  return L.divIcon({ html, className: "", iconAnchor: [0, 10] });
-}
-
-const lats = skigebiete.gebiete.map((g) => g.lat);
-const lngs = skigebiete.gebiete.map((g) => g.lng);
-const bounds: [[number, number], [number, number]] = [
-  [Math.min(...lats) - 0.4, Math.min(...lngs) - 0.5],
-  [Math.max(...lats) + 0.4, Math.max(...lngs) + 0.5],
-];
-
 const flakes = ["❄️","❅","❆","❄️","🌨️","❅","❆","❄️","❅","❆","❄️","❅"];
 
 export default function SkiKarte() {
+  const mapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const map = new maplibregl.Map({
+      container: mapRef.current,
+      style: {
+        version: 8,
+        sources: {
+          "osm": {
+            type: "raster",
+            tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+            tileSize: 256,
+            attribution: "© OpenStreetMap",
+          },
+          "terrain": {
+            type: "raster-dem",
+            url: "https://demotiles.maplibre.org/terrain-tiles/tiles.json",
+            tileSize: 256,
+          },
+        },
+        layers: [
+          {
+            id: "osm",
+            type: "raster",
+            source: "osm",
+          },
+        ],
+        sky: {
+          "sky-color": "#cfe6ff",
+          "sky-horizon-blend": 0.5,
+          "horizon-color": "#f4f9ff",
+          "horizon-fog-blend": 0.5,
+          "fog-color": "#d8eaff",
+          "fog-ground-blend": 0.5,
+        },
+      },
+      center: [10.5, 46.5],
+      zoom: 6,
+      pitch: 55,
+      bearing: -15,
+    });
+
+    map.on("load", () => {
+      // 3D-Terrain aktivieren
+      map.setTerrain({ source: "terrain", exaggeration: 2.5 });
+
+      // Schnee-Overlay: weißes Layer über hohe Regionen
+      map.addSource("hillshade-source", {
+        type: "raster-dem",
+        url: "https://demotiles.maplibre.org/terrain-tiles/tiles.json",
+        tileSize: 256,
+      });
+      map.addLayer({
+        id: "hillshade",
+        type: "hillshade",
+        source: "hillshade-source",
+        paint: {
+          "hillshade-shadow-color": "#aac8e8",
+          "hillshade-highlight-color": "#ffffff",
+          "hillshade-accent-color": "#b0cce8",
+          "hillshade-illumination-direction": 315,
+          "hillshade-exaggeration": 0.6,
+        },
+      });
+
+      // Marker für jedes Skigebiet
+      skigebiete.gebiete.forEach((g) => {
+        const farbe = landFarbe[g.land] ?? "#1457c8";
+        const el = document.createElement("div");
+        el.innerHTML = `
+          <div style="
+            background: ${farbe};
+            color: white;
+            border: 2px solid white;
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            font-family: sans-serif;
+            cursor: pointer;
+          ">⛷️ ${g.name.length > 22 ? g.name.slice(0, 20) + "…" : g.name}</div>
+        `;
+
+        new maplibregl.Marker({ element: el })
+          .setLngLat([g.lng, g.lat])
+          .setPopup(
+            new maplibregl.Popup({ offset: 25 }).setHTML(`
+              <div style="font-family:sans-serif; min-width:160px">
+                <div style="font-weight:800;color:${farbe};font-size:14px">${g.name}</div>
+                <div style="color:#666;font-size:12px;margin-top:2px">${g.land}</div>
+                <div style="margin-top:6px;font-size:12px">
+                  🎿 <b>${g.pistenKm} km</b> Pisten<br>
+                  ⛰️ bis <b>${g.hoeheMeter} m</b><br>
+                  ✨ ${g.highlight}
+                </div>
+              </div>
+            `)
+          )
+          .addTo(map);
+      });
+
+      // Karte auf alle Gebiete zoomen
+      const lngs = skigebiete.gebiete.map((g) => g.lng);
+      const lats = skigebiete.gebiete.map((g) => g.lat);
+      map.fitBounds(
+        [[Math.min(...lngs) - 0.3, Math.min(...lats) - 0.3],
+         [Math.max(...lngs) + 0.3, Math.max(...lats) + 0.3]],
+        { padding: 80, pitch: 55, bearing: -15 }
+      );
+    });
+
+    return () => map.remove();
+  }, []);
+
   return (
     <div style={{ height: "100vh", width: "100vw", position: "relative", overflow: "hidden" }}>
 
-      {/* Schneeflocken-Leiste */}
+      {/* Schneeflocken */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, zIndex: 1100,
         pointerEvents: "none", display: "flex", justifyContent: "space-around",
-        padding: "3px 0", background: "rgba(20,87,200,0.12)",
+        padding: "3px 0", background: "rgba(20,87,200,0.1)",
       }}>
         {flakes.map((f, i) => <span key={i} style={{ fontSize: 13, opacity: 0.5 }}>{f}</span>)}
       </div>
@@ -64,7 +152,6 @@ export default function SkiKarte() {
         display: "flex", alignItems: "flex-start", justifyContent: "space-between",
         padding: "0 16px", pointerEvents: "none",
       }}>
-        {/* Logo */}
         <div style={{
           background: "linear-gradient(135deg, #0b3a8c, #1457c8)",
           color: "white", borderRadius: 16, padding: "10px 16px",
@@ -82,17 +169,13 @@ export default function SkiKarte() {
           </div>
         </div>
 
-        {/* Legende */}
         <div style={{
-          background: "rgba(255,255,255,0.95)",
-          borderRadius: 14, padding: "10px 14px",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.14)",
-          border: "1px solid #cfe6ff", fontSize: 11, fontWeight: 600,
-          display: "flex", flexDirection: "column", gap: 4,
+          background: "rgba(255,255,255,0.95)", borderRadius: 14, padding: "10px 14px",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.14)", border: "1px solid #cfe6ff",
+          fontSize: 11, fontWeight: 600, display: "flex", flexDirection: "column", gap: 4,
         }}>
           {[
-            { land: "Österreich", farbe: "#e8443a" },
-            { land: "Schweiz", farbe: "#e8443a" },
+            { land: "Österreich / Schweiz", farbe: "#e8443a" },
             { land: "Frankreich", farbe: "#2fae66" },
             { land: "Italien", farbe: "#1457c8" },
           ].map(({ land, farbe }) => (
@@ -104,20 +187,8 @@ export default function SkiKarte() {
         </div>
       </div>
 
-      {/* Bergige Topografie-Karte */}
-      <MapContainer bounds={bounds} style={{ height: "100%", width: "100%" }}>
-        <TileLayer
-          attribution='&copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
-          url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
-        />
-        {skigebiete.gebiete.map((g) => (
-          <Marker
-            key={g.id}
-            position={[g.lat, g.lng]}
-            icon={makeIcon(g.name, g.land)}
-          />
-        ))}
-      </MapContainer>
+      {/* Karte */}
+      <div ref={mapRef} style={{ height: "100%", width: "100%" }} />
 
       {/* Slogan */}
       <div style={{
