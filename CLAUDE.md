@@ -71,6 +71,14 @@ Die App kann echte KI nutzen — **ohne dass jemand API-Keys anfasst**. Vier Fun
 
 Schlage diese Funktionen aktiv vor, wo sie ein „Wow" bringen (z. B. Postkarten-Bild per `kiBild`, Gruß per `kiText`, Vorlesen per `kiStimme`). Wenn eine KI-Funktion mal nicht antwortet: bau einen **einfachen Ersatz** (Platzhalterbild/-text) und erklär, dass die Idee trotzdem steht — kein Stillstand.
 
+## Ergebnis sichtbar machen (Vorschau-URL)
+Die App deployt **automatisch bei jedem Push auf `main`** (Vercel). So sieht die Gruppe ihren Fortschritt:
+1. Aktuellen Stand committen.
+2. **Auf main pushen:** `git push origin HEAD:main` (nicht auf einen Feature-Branch — sonst aktualisiert sich die feste URL nicht).
+3. Nach ~1 Minute live unter **https://<repo>.vercel.app** (Repo-Name via `git remote get-url origin`). Nenne der Gruppe diese URL.
+
+Mach das **nach jedem fertigen Schritt**, den sie sehen wollen. (Eine echte Live-Vorschau wie localhost gibt es in Claude Code Web nicht; der Weg ist immer: auf main pushen → Vercel-URL neu laden.)
+
 ## Technik-Rahmen (für dich, nicht zum Vorlesen)
 - Next.js 16 (App Router) + React 19 + Tailwind 4. Vorinstalliert: `leaflet`/`react-leaflet` (Karte), `html-to-image` (Postkarte als Bild speichern), `framer-motion` (Animationen).
 - `npm run dev` läuft mit Live-Vorschau. Nach Edits einfach die Vorschau prüfen.

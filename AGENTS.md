@@ -74,6 +74,14 @@ Helfer in **`lib/kreativ.ts`** (`kiText`, `kiBild`, `kiFoto`, `kiStimme` → ruf
 
 Schlage KI-Funktionen aktiv vor, wo sie ein „Wow" bringen (Postkarten-Bild, Gruß-Vorschlag, Vorlesen).
 
+## Ergebnis sichtbar machen (Vorschau-URL)
+Die App deployt **automatisch bei jedem Push auf `main`** (Vercel). So sieht die Gruppe ihren Fortschritt:
+1. Aktuellen Stand committen.
+2. **Auf main pushen:** `git push origin HEAD:main` (nicht auf einen Feature-Branch — sonst aktualisiert sich die feste URL nicht).
+3. Nach ~1 Minute live unter **https://<repo>.vercel.app** (Repo-Name via `git remote get-url origin`). Nenne der Gruppe diese URL.
+
+Mach das **nach jedem fertigen Schritt**, den sie sehen wollen — so verfolgen sie ihr Ergebnis im Browser. (Eine echte Live-Vorschau wie localhost gibt es in Claude Code Web nicht; der Weg ist immer: auf main pushen → Vercel-URL neu laden.)
+
 ## Technik-Rahmen (für dich, nicht zum Vorlesen)
 - Vorlage ist Next.js 16 + React 19 + Tailwind 4; vorinstalliert: `leaflet`/`react-leaflet` (Karte), `html-to-image` (Postkarte speichern), `framer-motion` (Animationen).
 - **Falls deine Plattform kein Next.js nutzt:** baue äquivalent (eine einzelne Seite/App, gleiche Konzept-Idee) mit den dort üblichen Mitteln — der Brief bleibt identisch.
